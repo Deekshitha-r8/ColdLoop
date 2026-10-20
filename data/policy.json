@@ -1,0 +1,11 @@
+{
+  "_note": "ALL VALUES ARE SIMULATED / INVENTED FOR THE DEMO. No clinical or regulatory validity is claimed.",
+  "alarm": { "toleranceMin": 10, "glitchJumpC": 12, "maxGapMin": 15 },
+  "ledger": { "heatAboveC": 8, "freezeBelowC": 0, "warnPct": 50 },
+  "replacement": { "budgetReserveFraction": 0.5, "dispatchLeadHours": 2 },
+  "spend": { "limitINR": 40000 },
+  "replan": { "maxRounds": 3 },
+  "ranking": { "weights": { "daysOfStock": 0.5, "criticalityTier": 0.3, "budgetOverrun": 0.2 } },
+  "projection": { "reeferAutonomyHours": 8 },
+  "roles": { "qa": "qa-demo-token", "controller": "ctl-demo-token" }
+}

@@ -1,0 +1,9 @@
+{
+  "_note": "RECORDED SAMPLE (synthetic). Used when no live feed is configured. Set LANE_FEED_URL to try a live RSS/JSON feed.",
+  "items": [
+    { "id": "LF-001", "ts": "2026-11-03T22:10:00+05:30", "lane": "BLR-WH>TMK-CL", "title": "NH48 Nelamangala-Tumakuru stretch: multi-vehicle accident, heavy congestion, delays of 10-14 hours expected", "severity": "high", "delayHours": 14 },
+    { "id": "LF-002", "ts": "2026-11-03T23:40:00+05:30", "lane": "BLR-WH>MYS-CL", "title": "Bengaluru-Mysuru expressway: lane closure for repairs, 3-4 hour delays", "severity": "medium", "delayHours": 4 },
+    { "id": "LF-003", "ts": "2026-11-04T01:05:00+05:30", "lane": "BLR-WH>HSN-CL", "title": "Hassan approach road: local bandh announced, trucks held at district border", "severity": "medium", "delayHours": 6 },
+    { "id": "LF-004", "ts": "2026-11-04T02:30:00+05:30", "lane": "MYS-DEP>TMK-CL", "title": "No disruption reported", "severity": "none", "delayHours": 0 }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "name": "coldloop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ColdLoop - agentic recovery for pharma cold-chain excursions (SAP Hackfest 2026, synthetic data)",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/server.ts",
+    "dev": "tsx watch src/server.ts",
+    "harness": "tsx src/harness.ts",
+    "attacks": "tsx src/attacks.ts"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0"
+  }
+}

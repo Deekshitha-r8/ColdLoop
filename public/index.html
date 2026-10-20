@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ColdLoop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,400..800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F6F7; --panel:#FFFFFF; --ink:#16232B; --muted:#5A6B74; --line:#D5DFE2;
+  --safe:#0B6E75; --safe-soft:#DCEFEF; --warn:#C77700; --warn-soft:#FBEBD2;
+  --breach:#B83227; --breach-soft:#F7DEDA; --freeze:#5A48B8; --freeze-soft:#E6E2F7; --unknown:#8A979E;
+  --focus:#1D5FD1;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0F1A1F; --panel:#16242B; --ink:#E4ECEE; --muted:#93A5AD; --line:#2A3B43;
+  --safe:#43B3B9; --safe-soft:#123437; --warn:#E9A23B; --warn-soft:#3A2B12; --breach:#EF6B5E; --breach-soft:#3D1D1A; --freeze:#9C8CF0; --freeze-soft:#25204A; --unknown:#6F7F86; --focus:#7AA7FF;
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Atkinson Hyperlegible",system-ui,sans-serif}
+h1,h2,h3,.num{font-family:Archivo,system-ui,sans-serif;font-stretch:82%;letter-spacing:-.01em}
+h1{font-size:22px;margin:0;font-weight:800}
+h2{font-size:20px;margin:0 0 8px;font-weight:700}
+h3{font-size:15px;margin:18px 0 6px;font-weight:700}
+.num{font-variant-numeric:tabular-nums}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel);padding:6px 12px;border-radius:6px}
+button.primary{background:var(--safe);border-color:var(--safe);color:#fff;font-weight:700}
+button.danger{background:var(--breach);border-color:var(--breach);color:#fff}
+button:disabled{opacity:.5;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+input,select,textarea{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+
+header{display:flex;align-items:center;gap:18px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+header .logo{display:flex;align-items:baseline;gap:10px}
+.synthetic{font-size:12px;color:var(--warn);border:1px solid var(--warn);border-radius:20px;padding:1px 10px}
+nav{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+nav button{border:none;background:none;padding:8px 12px;border-radius:6px;color:var(--muted)}
+nav button[aria-current="page"]{background:var(--safe-soft);color:var(--ink);font-weight:700}
+
+.impact{display:flex;gap:28px;padding:10px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.impact div{display:flex;flex-direction:column}
+.impact .num{font-size:22px;font-weight:700;line-height:1.1}
+.impact span:last-child{font-size:12px;color:var(--muted)}
+
+main{display:grid;grid-template-columns:330px 1fr;min-height:calc(100vh - 120px)}
+@media (max-width:860px){main{grid-template-columns:1fr}}
+aside{border-right:1px solid var(--line);background:var(--panel);overflow:auto;max-height:calc(100vh - 120px)}
+@media (max-width:860px){aside{max-height:320px;border-right:none;border-bottom:1px solid var(--line)}}
+.inbox-head{padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px;position:sticky;top:0;background:var(--panel);border-bottom:1px solid var(--line)}
+.ship{display:grid;grid-template-columns:6px 1fr auto;gap:10px;padding:10px 16px 10px 0;border-bottom:1px solid var(--line);cursor:pointer;width:100%;text-align:left;border-radius:0;border-left:none;border-right:none;border-top:none;background:none}
+.ship:hover{background:var(--bg)}
+.ship[aria-selected="true"]{background:var(--safe-soft)}
+.ship .stripe{background:var(--line)}
+.ship .id{font-weight:700}
+.ship .meta{font-size:12px;color:var(--muted)}
+.state{font-size:12px;padding:1px 8px;border-radius:12px;white-space:nowrap;align-self:start;background:var(--bg);color:var(--muted)}
+.s-breach{--c:var(--breach);--cs:var(--breach-soft)}
+.s-warn{--c:var(--warn);--cs:var(--warn-soft)}
+.s-safe{--c:var(--safe);--cs:var(--safe-soft)}
+.s-unknown{--c:var(--unknown);--cs:var(--bg)}
+.ship[class*="s-"] .stripe{background:var(--c)}
+.ship[class*="s-"] .state,.pill[class*="s-"]{background:var(--cs);color:var(--c);font-weight:700}
+.pill{display:inline-block;font-size:12px;padding:1px 8px;border-radius:12px;background:var(--bg)}
+
+section.view{padding:20px 24px;max-width:1150px}
+.empty{padding:60px 24px;max-width:560px}
+.empty h2{font-size:26px}
+
+/* signature: stability budget bar */
+.budget{margin:14px 0 6px;padding-right:72px}
+.budget .track{position:relative;height:34px;border:2px solid var(--ink);border-radius:4px;background:repeating-linear-gradient(90deg,transparent 0 calc(10% - 1px),var(--line) calc(10% - 1px) 10%)}
+.budget .fill{position:absolute;inset:0 auto 0 0;background:var(--c,var(--safe));transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.budget .over{position:absolute;top:-8px;bottom:-8px;left:100%;background:repeating-linear-gradient(135deg,var(--breach) 0 6px,transparent 6px 10px);border:2px solid var(--breach);border-left:none;transition:width .9s .6s cubic-bezier(.2,.8,.2,1)}
+.budget .label{display:flex;justify-content:space-between;font-size:13px;margin-top:6px}
+.budget .big{font-size:44px;font-weight:800;line-height:1}
+@media (prefers-reduced-motion:reduce){.budget .fill,.budget .over{transition:none}}
+
+.case-head{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.verdict{border-left:6px solid var(--c);background:var(--cs);padding:12px 16px;border-radius:0 6px 6px 0;margin:14px 0}
+.verdict strong{font-family:Archivo,system-ui,sans-serif;font-stretch:82%;font-size:19px;display:block}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media (max-width:1000px){.grid2{grid-template-columns:1fr}}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+svg.chart{width:100%;height:auto;display:block}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:700;color:var(--muted)}
+tr.chosen td{background:var(--safe-soft)}
+tr.invalid td{color:var(--muted)}
+.fail{color:var(--breach)}
+.ok{color:var(--safe)}
+
+ol.trace{list-style:none;padding:0;margin:0;counter-reset:t}
+ol.trace li{display:grid;grid-template-columns:28px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
+ol.trace li::before{counter-increment:t;content:counter(t);color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+ol.trace code{font-weight:700;font-family:Archivo;font-stretch:85%;font-size:14px}
+ol.trace li.blocked{background:var(--breach-soft)}
+ol.trace li.blocked code{color:var(--breach)}
+
+blockquote{margin:6px 0;padding:4px 10px;border-left:3px solid var(--safe);font-size:13px}
+blockquote.dropped{border-color:var(--breach);text-decoration:line-through;color:var(--muted)}
+.note{background:var(--bg);border-radius:6px;padding:8px 10px;margin:6px 0;font-size:14px}
+.note.inj{background:var(--breach-soft)}
+mark{background:var(--warn-soft);color:inherit;padding:0 2px;border-radius:2px}
+mark.inj{background:var(--breach);color:#fff}
+.explain sup{font-size:10px;color:var(--safe);cursor:help}
+
+.qa{border:2px solid var(--ink);border-radius:8px;padding:14px 16px;margin-top:20px}
+.qa .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.qa textarea{width:100%;min-height:56px}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:6px;max-width:420px;font-size:14px;z-index:9}
+.toast.err{background:var(--breach);color:#fff}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:20px 0 14px;flex-wrap:wrap}
+.tabs button{border:none;border-bottom:3px solid transparent;border-radius:0;background:none;padding:8px 12px;color:var(--muted)}
+.tabs button[aria-selected="true"]{border-bottom-color:var(--safe);color:var(--ink);font-weight:700}
+.chainrow.bad td{background:var(--breach-soft)}
+.hash{font-family:ui-monospace,monospace;font-size:11px;color:var(--muted)}
+.rankbar{height:8px;background:var(--safe);border-radius:4px}
+.feed{display:grid;gap:8px}
+.feed .item{border-left:4px solid var(--c,var(--line));padding:4px 10px;background:var(--panel)}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;align-items:end}
+.form label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+@media (max-width:700px){.compare{grid-template-columns:1fr}}
+dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0;font-size:14px}
+dt{color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><h1>ColdLoop</h1><span class="muted small">Cold-chain alarm to QA decision</span></div>
+  <span class="synthetic" title="All products, budgets, clinics and carriers are invented">Synthetic data, not for clinical use</span>
+  <nav id="nav">
+    <button data-v="alarms" aria-current="page">Alarms</button>
+    <button data-v="priority">Clinic priority</button>
+    <button data-v="whatif">What-if</button>
+    <button data-v="audit">Audit trail</button>
+    <button data-v="trust">Trust tests</button>
+  </nav>
+</header>
+<div class="impact" id="impact"></div>
+<main id="main">
+  <aside>
+    <div class="inbox-head"><strong>Alarm inbox</strong><span><button id="runAll" class="primary">Run all alarms</button></span></div>
+    <div id="inbox" role="listbox" aria-label="Shipments"></div>
+  </aside>
+  <div id="content"></div>
+</main>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const api = async (path, body) => {
+  const r = await fetch(path, body ? {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)} : {});
+  const j = await r.json(); if (!r.ok) throw new Error(j.error || 'Request failed'); return j;
+};
+let META, SHIPS = [], selected = null, view = 'alarms', caseTab = 'decision';
+const tone = st => ({closed_false_alarm:'s-safe',qa_released:'s-safe',awaiting_qa:'s-warn',replacement_booked_awaiting_qa:'s-warn',awaiting_qa_spend_approval:'s-warn',escalated_undetermined:'s-unknown',no_replacement_escalated:'s-breach',qa_rejected:'s-breach'}[st] || '');
+const label = st => ({new:'Not run',closed_false_alarm:'False alarm closed',awaiting_qa:'Held for QA',replacement_booked_awaiting_qa:'Replacement booked',awaiting_qa_spend_approval:'Needs spend approval',escalated_undetermined:'Not enough data',no_replacement_escalated:'No replacement found',qa_released:'Released by QA',qa_rejected:'Rejected by QA'}[st] || st);
+function toast(msg, err){ const t=$('#toast'); t.textContent=msg; t.className='toast'+(err?' err':''); t.hidden=false; clearTimeout(t._h); t._h=setTimeout(()=>t.hidden=true,4200); }
+
+async function refresh(){
+  [SHIPS] = await Promise.all([api('/api/shipments')]);
+  renderInbox(); renderImpact();
+}
+async function renderImpact(){
+  const i = await api('/api/impact');
+  $('#impact').innerHTML = [
+    [i.casesRun,'alarms handled'],[i.falseAlarmsClosed,'false alarms closed'],[i.replacementsVerified,'replacements verified'],
+    [i.dosesProtected.toLocaleString('en-IN'),'doses kept reaching clinics'],[i.onHold,'lots on quality hold'],[i.blockedToolCalls,'unsafe actions blocked']
+  ].map(([n,l])=>`<div><span class="num">${n}</span><span>${l}</span></div>`).join('');
+}
+function renderInbox(){
+  $('#inbox').innerHTML = SHIPS.map(s => `<button class="ship ${tone(s.status)}" role="option" aria-selected="${s.id===selected}" data-id="${s.id}">
+    <span class="stripe"></span>
+    <span><span class="id">${s.id}</span> <span class="small">${esc(s.product)}</span><br>
+    <span class="meta">${s.qty} units to ${esc(s.dest)}${s.lane?' · route disrupted':''}</span></span>
+    <span class="state">${label(s.status)}</span></button>`).join('');
+}
+$('#inbox').onclick = e => { const b = e.target.closest('.ship'); if (b) { selected = b.dataset.id; view='alarms'; setNav(); renderInbox(); showCase(); } };
+$('#runAll').onclick = async () => { $('#runAll').disabled = true; try { await api('/api/run-all',{}); await refresh(); toast('All 43 alarms processed. Most urgent clinics were served first.'); if (view==='priority') showPriority(); else if (selected) showCase(); } catch(e){toast(e.message,true)} $('#runAll').disabled=false; };
+$('#nav').onclick = e => { const b=e.target.closest('button'); if(!b) return; view=b.dataset.v; setNav(); render(); };
+function setNav(){ document.querySelectorAll('#nav button').forEach(b=>b.setAttribute('aria-current', b.dataset.v===view?'page':'false')); }
+function render(){ ({alarms: selected ? showCase : showWelcome, priority: showPriority, whatif: showWhatIf, audit: showAudit, trust: showTrust})[view](); }
+
+function showWelcome(){
+  $('#content').innerHTML = `<div class="empty"><h2>A vaccine shipment just raised a temperature alarm.</h2>
+  <p>ColdLoop reads the logger data, works out whether the alarm is real, quarantines what is unsafe, finds and books a verified replacement, and hands QA one explained decision with every claim sourced.</p>
+  <p>The AI reads notes and explains. Code makes every decision. A human releases product.</p>
+  <p><button class="primary" onclick="selected='SH-1001';renderInbox();showCase()">Open the Tumakuru vaccine alarm</button></p>
+  <p class="muted small">Reader in use: ${esc(META.reader)}. Lane feed: ${esc(META.feed)}.</p></div>`;
+}
+
+// ---------- case view
+async function showCase(){
+  const id = selected; const [s, c] = await Promise.all([api('/api/shipments/'+id), api('/api/cases/'+id)]);
+  const sum = SHIPS.find(x=>x.id===id);
+  if (!c) {
+    $('#content').innerHTML = `<section class="view"><div class="case-head"><div><h2>${id}: ${esc(s.product.name)}</h2>
+      <p class="muted">${s.qty} units from Bengaluru warehouse to ${esc(s.destSite.name)}. Clinic has ${s.clinicDaysStock} day(s) of stock. Needed within ${s.needByHours}h.</p></div></div>
+      <h3>Handler notes as received</h3>${s.notes.map(n=>`<div class="note">${esc(n)}</div>`).join('')}
+      <div class="row" style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+      <button class="primary" id="go">Run ColdLoop on this alarm</button>
+      <button id="goOff">Run with AI turned off</button></div>
+      <p class="muted small">Running with AI off gives the same decision, with a plainer explanation. That is the point.</p></section>`;
+    $('#go').onclick = () => run(id, true); $('#goOff').onclick = () => run(id, false); return;
+  }
+  const L = c.ledger; const used = L.usedPct; const t = tone(c.status);
+  const fillC = used>=100?'var(--breach)':used>=50?'var(--warn)':'var(--safe)';
+  $('#content').innerHTML = `<section class="view ${t}">
+    <div class="case-head"><div><h2>${id}: ${esc(s.product.name)} to ${esc(s.destSite.name)}</h2>
+      <p class="muted small">${s.qty} units · need-by ${s.needByHours}h · clinic stock ${s.clinicDaysStock} day(s) · ${c.aiMode?'AI reader: '+esc(c.readerName):'AI off'}</p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><a href="/api/cases/${id}/report" target="_blank"><button>Audit report (PDF)</button></a><button id="rerun">Re-run</button></div></div>
+    <div class="budget" style="--c:${fillC}">
+      <div class="label"><span><span class="big num">${used}%</span> of the stability budget used</span><span class="muted">heat ${L.heatMin}/${L.heatBudget} min · freeze ${L.freezeMin}/${L.freezeBudget} min${L.unknownMin?` · <b>${L.unknownMin} min unknown</b>`:''}</span></div>
+      <div class="track"><div class="fill" style="width:0"></div><div class="over" style="width:0"></div></div>
+      <div class="label muted"><span>0</span><span>Simulated budget. Exceeding 100% means the lot cannot be used.</span><span>100%</span></div>
+    </div>
+    <div class="verdict ${t}"><strong>${label(c.status)}</strong>${esc(c.explanation)}</div>
+    <div class="tabs" role="tablist">${['decision','replacement','notes','trace'].map(k=>`<button role="tab" data-t="${k}" aria-selected="${caseTab===k}">${{decision:'Evidence',replacement:'Replacement plan',notes:'Notes and AI',trace:'Agent steps'}[k]}</button>`).join('')}</div>
+    <div id="tabbody"></div>
+    ${qaPanel(c)}
+  </section>`;
+  requestAnimationFrame(()=>{ const f=$('.budget .fill'), o=$('.budget .over'); if(f){ f.style.width=Math.min(used,100)+'%'; o.style.width=(used>100?Math.round(Math.min(Math.max(used-100,0)*2.5+12,70)):0)+'px'; } });
+  $('#rerun').onclick = () => run(id, c.aiMode);
+  document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{caseTab=b.dataset.t;document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));tabBody(s,c);});
+  tabBody(s,c); wireQA(c);
+}
+async function run(id, aiMode){ try{ await api(`/api/cases/${id}/run`,{aiMode}); await refresh(); showCase(); }catch(e){toast(e.message,true)} }
+
+function tabBody(s,c){
+  const el = $('#tabbody'); const L=c.ledger;
+  if (caseTab==='decision') el.innerHTML = `<div class="box">${chart(s.observed, L)}
+      <div class="legend"><span><i style="background:var(--safe-soft);border:1px solid var(--safe)"></i>2 to 8 °C safe band</span><span><i style="background:var(--breach)"></i>heat excursion</span><span><i style="background:var(--freeze)"></i>freeze excursion</span><span><i style="background:var(--unknown)"></i>missing data</span><span>${L.glitchCount} glitch(es) filtered</span></div></div>
+    <div class="grid2" style="margin-top:16px">
+      <div><h3>How the verdict was reached</h3><dl>
+        <dt>Classification</dt><dd>${c.classification.replace('_',' ')}</dd><dt>Disposition</dt><dd>${c.disposition}</dd>
+        <dt>Decided by</dt><dd>ledger.ts and policy.json (no AI)</dd><dt>Quality hold</dt><dd>${c.holdPlaced?'Placed':'Not needed'}</dd></dl>
+        ${c.abstain?`<h3>Evidence needed before anyone decides</h3><ul>${c.abstain.evidenceNeeded.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
+        ${c.conflict?`<div class="verdict s-breach" style="margin-top:12px"><strong>Notes contradict the sensor</strong>${esc(c.conflict)}</div>`:''}
+      </div>
+      <div><h3>Route conditions</h3>${c.laneItems.length? `<div class="feed">${c.laneItems.map(i=>`<div class="item" style="--c:var(--breach)"><b>${esc(i.title)}</b><br><span class="small muted">${esc(META.feed)}</span></div>`).join('')}</div>
+        ${c.projection?`<p class="small"><b>${esc(c.projection.label)}.</b> If the original truck stays on this road, it would reach about <b>${c.projection.projectedPct}%</b> of budget${c.ledger.heatMin>=c.ledger.heatBudget?' (it is already past 100%, so the lot is lost either way; this shows why waiting is not an option)':c.projection.hoursToBreach!=null?`, crossing 100% around hour ${c.projection.hoursToBreach} of the delay`:''}. <span class="muted">${esc(c.projection.assumption)}</span></p>`:''}`
+        : '<p class="muted">No disruption reported on this lane.</p>'}
+      </div></div>
+    <h3>Every claim and where it came from</h3><table><tr><th>Claim</th><th>Kind</th><th>Source</th><th>Audit record</th></tr>
+    ${(c.dossier||[]).map(d=>`<tr><td>${esc(d.text)}${d.quote?`<blockquote>"${esc(d.quote)}"</blockquote>`:''}</td><td>${d.kind}</td><td class="small">${esc(d.source)}</td><td class="num">#${d.auditIdx}</td></tr>`).join('')}</table>`;
+  if (caseTab==='replacement') {
+    if (!c.options.length) { el.innerHTML = '<p class="muted">No replacement is needed for this disposition. The original lot is either fine or held for QA.</p>'; return; }
+    el.innerHTML = `${c.replacement?`<div class="verdict s-safe"><strong>Booked and verified: ${esc(c.replacement.bookingId)} via ${esc(c.replacement.carrierName)}</strong>
+       Lot ${c.replacement.lotId}, arrives in ${c.replacement.arrivalHours}h, INR ${c.replacement.costINR.toLocaleString('en-IN')}. ${c.replacement.verification.map(v=>`<span class="${v.ok?'ok':'fail'}">${v.ok?'✓':'✗'} ${esc(v.name)}</span>`).join(' ')}</div>`:''}
+      ${c.replans?`<p><b>Re-planned ${c.replans} time(s).</b> Excluded after cancellation: ${c.excluded.join(', ')}. ColdLoop checked the booking instead of trusting it.</p>`:''}
+      ${c.pendingSpend?spendPanel(c):''}
+      <h3>Every option checked (${c.options.filter(o=>o.valid).length} of ${c.options.length} pass)</h3>
+      <div style="overflow:auto"><table><tr><th>Lot / carrier</th><th>Arrives</th><th>Cost (INR)</th><th>Heat risk</th><th>Checks</th></tr>
+      ${c.options.map(o=>`<tr class="${o.valid?(c.chosen?.key===o.key?'chosen':''):'invalid'}"><td><b>${o.lotId}</b> from ${o.fromSite}<br><span class="small">${esc(o.carrierName)}</span></td>
+        <td class="num">${o.arrivalHours?o.arrivalHours+'h':'-'}</td><td class="num">${o.costINR?o.costINR.toLocaleString('en-IN'):'-'}</td><td class="num">${o.projectedHeatPct}%</td>
+        <td class="small">${o.valid?'<span class="ok">All 7 pass</span>':o.checks.filter(k=>!k.ok).map(k=>`<span class="fail">✗ ${esc(k.name)}</span> <span class="muted">${esc(k.detail)}</span>`).join('<br>')}</td></tr>`).join('')}</table></div>`;
+    wireSpend(c);
+  }
+  if (caseTab==='notes') {
+    const injQ = c.injections.map(i=>i.quote); const facts=c.facts;
+    el.innerHTML = `<p class="small muted">The AI reader turns notes in any language into facts. A fact is kept only if its quote appears word for word in the note. Facts can shape the explanation; they cannot change the verdict.</p>
+      ${s.notes.map((n,i)=>{ let h=esc(n); facts.filter(f=>f.noteIdx===i).forEach(f=>h=h.split(esc(f.quote)).join(`<mark>${esc(f.quote)}</mark>`)); injQ.forEach(q=>h=h.split(esc(q)).join(`<mark class="inj">${esc(q)}</mark>`));
+        return `<div class="note ${c.injections.some(x=>x.noteIdx===i)?'inj':''}"><span class="small muted">Note ${i+1}</span><br>${h}</div>`; }).join('')}
+      ${c.injections.length?`<div class="verdict s-breach"><strong>${c.injections.length} instruction(s) hidden in notes were ignored</strong>${c.injections.map(i=>esc(i.kind)).join(', ')}. Notes are data, never commands. Release is a QA-only tool, so no wording can trigger it.</div>`:''}
+      <div class="grid2"><div><h3>Kept facts (${facts.length})</h3>${facts.map(f=>`<div><b>${f.type}</b>: ${esc(f.value)}<blockquote>"${esc(f.quote)}"</blockquote></div>`).join('')||'<p class="muted">None</p>'}</div>
+      <div><h3>Dropped, quote not in note (${c.droppedFacts.length})</h3>${c.droppedFacts.map(f=>`<div><b>${f.type}</b>: ${esc(f.value)}<blockquote class="dropped">"${esc(f.quote)}"</blockquote></div>`).join('')||'<p class="muted">None. Try the hostile reader in Trust tests.</p>'}</div></div>`;
+  }
+  if (caseTab==='trace') el.innerHTML = `<p class="small muted">Each step is a tool the agent chose, with its reason. The policy gate checks role, spend and state before anything runs.</p>
+    <ol class="trace">${c.trace.map(t=>`<li class="${t.allowed?'':'blocked'}"><div><code>${t.tool}</code> <span class="muted small">${esc(t.args)}</span><br>${esc(t.why)}${t.allowed?'':`<br><b class="fail">${esc(t.result)}</b>`}</div></li>`).join('')}</ol>`;
+}
+
+function chart(rs, L){
+  const W=760,H=220,P=34, maxT=Math.max(...rs.map(r=>r.t),360), lo=-4, hi=16;
+  const x=t=>P+(t/maxT)*(W-P-8), y=c=>H-22-((Math.max(lo,Math.min(hi,c))-lo)/(hi-lo))*(H-36);
+  let path='', prev=null;
+  rs.forEach(r=>{ path += (prev && r.t-prev.t>15 ? 'M':'L') + x(r.t).toFixed(1)+','+y(r.c).toFixed(1); prev=r; }); path='M'+path.slice(1);
+  const gaps=L.gaps.map(g=>`<rect x="${x(g.fromT)}" y="10" width="${x(g.toT)-x(g.fromT)}" height="${H-32}" fill="var(--unknown)" opacity=".25"/><text x="${(x(g.fromT)+x(g.toT))/2}" y="24" text-anchor="middle" font-size="11" fill="var(--muted)">no data ${g.unknownMin} min</text>`).join('');
+  const exc=L.excursions.map(e=>`<rect x="${x(e.startT)}" y="${H-20}" width="${Math.max(2,x(e.endT)-x(e.startT))}" height="6" fill="${e.kind==='heat'?'var(--breach)':'var(--freeze)'}"/>`).join('');
+  const ticks=[0,2,8,12].map(c=>`<text x="${P-6}" y="${y(c)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${c}°</text>`).join('');
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Temperature trace: ${L.heatMin} minutes above 8 degrees, ${L.freezeMin} below 0">
+    <rect x="${P}" y="${y(8)}" width="${W-P-8}" height="${y(2)-y(8)}" fill="var(--safe-soft)"/>
+    <line x1="${P}" x2="${W-8}" y1="${y(8)}" y2="${y(8)}" stroke="var(--breach)" stroke-dasharray="4 3"/>
+    <line x1="${P}" x2="${W-8}" y1="${y(0)}" y2="${y(0)}" stroke="var(--freeze)" stroke-dasharray="4 3"/>
+    ${gaps}${ticks}<path d="${path}" fill="none" stroke="var(--ink)" stroke-width="1.6"/>${exc}
+    <text x="${W-8}" y="${H-2}" text-anchor="end" font-size="11" fill="var(--muted)">minutes since dispatch (${maxT})</text></svg>`;
+}
+
+function spendPanel(c){ return `<div class="qa" style="margin-top:0"><h3 style="margin-top:0">Spend approval needed</h3>
+  <p>Best valid option is <b>${esc(c.pendingSpend.carrierName)}</b>, arriving in ${c.pendingSpend.arrivalHours}h, at <b>INR ${c.pendingSpend.costINR.toLocaleString('en-IN')}</b>. That is above the INR ${META.policy.spend.limitINR.toLocaleString('en-IN')} auto-spend limit, so the agent was blocked and is waiting for you.</p>
+  <div class="row"><input id="spTok" placeholder="Controller or QA token" value="ctl-demo-token" aria-label="Approver token"><input id="spWhy" placeholder="Reason" value="Clinic has half a day of stock; air is the only option in time" style="flex:1" aria-label="Reason"><button class="primary" id="spGo">Approve spend and book</button></div></div>`; }
+function wireSpend(c){ const b=$('#spGo'); if(b) b.onclick=async()=>{ try{ await api(`/api/cases/${c.shipmentId}/approve-spend`,{token:$('#spTok').value,reason:$('#spWhy').value}); toast('Spend approved and replacement booked.'); await refresh(); showCase(); }catch(e){toast(e.message,true)} }; }
+
+function qaPanel(c){
+  if (c.status==='closed_false_alarm') return '';
+  if (c.qa) return `<div class="qa"><h3 style="margin-top:0">QA decision recorded</h3><p><b>${c.qa.decision}${c.qa.override?' (override)':''}</b>: ${esc(c.qa.reason)}</p></div>`;
+  const breached = c.ledger.status==='breached';
+  return `<div class="qa"><h3 style="margin-top:0">QA decision on the original lot</h3>
+    <p class="small muted">Only a QA token can release or reject. ${breached?'This lot is breached: releasing it needs an override and a written reason.':''}</p>
+    <textarea id="qaWhy" placeholder="Reason for your decision" aria-label="Reason"></textarea>
+    <div class="row"><input id="qaTok" value="qa-demo-token" aria-label="QA token"><label class="small"><input type="checkbox" id="qaOv"> Override</label>
+    <button class="danger" id="qaRej">Reject lot</button><button id="qaRel">Release lot</button>
+    <button id="qaAgent" title="Shows what happens when the agent tries">Let the agent try to release</button></div></div>`;
+}
+function wireQA(c){
+  const go = async (decision, token) => { try{ await api(`/api/cases/${c.shipmentId}/qa`,{token: token ?? $('#qaTok').value, decision, reason: $('#qaWhy').value, override: $('#qaOv').checked}); toast(decision==='release'?'Lot released by QA.':'Lot rejected by QA.'); await refresh(); showCase(); }catch(e){ toast('Refused: '+e.message, true); await refresh(); } };
+  if ($('#qaRel')) { $('#qaRel').onclick=()=>go('release'); $('#qaRej').onclick=()=>go('reject'); $('#qaAgent').onclick=()=>go('release','agent'); }
+}
+
+// ---------- priority
+async function showPriority(){
+  const r = await api('/api/rank'); const max = Math.max(...r.map(x=>x.score),1);
+  $('#content').innerHTML = `<section class="view"><h2>Which clinic gets scarce stock first</h2>
+  <p class="muted">When replacements are short, breached shipments are ranked by days of stock left, clinic criticality and how badly the budget was exceeded. Weights live in policy.json, so the rule is visible and can be argued with.</p>
+  ${r.length?`<table><tr><th>Rank</th><th>Clinic</th><th>Shipment</th><th>Score</th><th>Why</th><th>Outcome</th></tr>${r.map(x=>{const s=SHIPS.find(y=>y.id===x.shipmentId);return `<tr><td class="num"><b>${x.position}</b></td><td>${esc(x.clinic)}</td><td>${x.shipmentId}</td><td style="min-width:120px"><span class="num">${x.score}</span><div class="rankbar" style="width:${x.score/max*100}%"></div></td><td class="small">${x.reasons.map(esc).join('<br>')}</td><td><span class="pill ${tone(s.status)}">${label(s.status)}</span></td></tr>`}).join('')}</table>`
+  :'<p>No breached shipments yet. Press <b>Run all alarms</b> to process the full set of 43.</p>'}</section>`;
+}
+
+// ---------- what-if
+function showWhatIf(){
+  $('#content').innerHTML = `<section class="view"><h2>What if things get worse?</h2>
+  <p class="muted">Re-runs the agent on a copy of the world. Nothing is booked. Use it to show how the plan reacts to a longer closure, a lost carrier or a tighter budget.</p>
+  <div class="form box">
+    <label>Shipment<select id="wiS">${SHIPS.map(s=>`<option ${s.id==='SH-1001'?'selected':''}>${s.id}</option>`).join('')}</select></label>
+    <label>Extra road delay (hours)<input id="wiD" type="number" value="6" min="0"></label>
+    <label>Carriers that cancel<select id="wiC" multiple size="4">${META.carriers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label>
+    <label>Auto-spend limit (INR)<input id="wiL" type="number" value="${META.policy.spend.limitINR}"></label>
+    <button class="primary" id="wiGo">Simulate</button></div><div id="wiOut"></div></section>`;
+  $('#wiGo').onclick = async () => {
+    const r = await api('/api/whatif',{shipmentId:$('#wiS').value, extraDelayHours:+$('#wiD').value, cancelCarriers:[...$('#wiC').selectedOptions].map(o=>o.value), spendLimitINR:+$('#wiL').value});
+    const col=(t,x)=>`<div class="box"><h3 style="margin-top:0">${t}</h3><dl><dt>Outcome</dt><dd><span class="pill ${tone(x.status)}">${label(x.status)}</span></dd><dt>Carrier</dt><dd>${esc(x.chosen??'none')}</dd><dt>Cost</dt><dd class="num">${x.costINR?'INR '+x.costINR.toLocaleString('en-IN'):'-'}</dd><dt>Arrives</dt><dd class="num">${x.arrivalHours?x.arrivalHours+'h':'-'}</dd><dt>Valid options</dt><dd class="num">${x.validOptions}</dd><dt>Re-plans</dt><dd class="num">${x.replans}</dd>${x.projection?`<dt>Original truck</dt><dd>${x.projection.projectedPct}% projected</dd>`:''}</dl></div>`;
+    $('#wiOut').innerHTML = `<p class="small"><b>${esc(r.label)}</b></p><div class="compare">${col('Today',r.baseline)}${col('With your changes',r.scenario)}</div>`;
+  };
+}
+
+// ---------- audit
+async function showAudit(){
+  const a = await api('/api/audit');
+  $('#content').innerHTML = `<section class="view"><h2>Audit trail</h2>
+  <div class="verdict ${a.integrity.ok?'s-safe':'s-breach'}"><strong>${a.integrity.ok?`Chain intact: ${a.entries.length} records verified`:`Chain broken at record #${a.integrity.brokenAt}`}</strong>Each record stores the hash of the one before it. Editing any past record breaks every hash after it.</div>
+  <p><button id="tamper">Secretly edit record #3</button> <button id="reset">Reset demo</button></p>
+  <div style="overflow:auto"><table><tr><th>#</th><th>Actor</th><th>Action</th><th>Rationale</th><th>Source</th><th>Hash</th></tr>
+  ${a.entries.slice().reverse().map(e=>`<tr class="chainrow ${!a.integrity.ok&&e.idx>=a.integrity.brokenAt?'bad':''}"><td class="num">${e.idx}</td><td>${e.actor}</td><td>${esc(e.action)}</td><td class="small">${esc(e.rationale)}</td><td class="small muted">${esc(e.source)}</td><td class="hash">${e.hash.slice(0,12)}</td></tr>`).join('')}</table></div></section>`;
+  $('#tamper').onclick = async()=>{ await api('/api/audit/tamper',{idx:3}); showAudit(); };
+  $('#reset').onclick = async()=>{ await api('/api/reset',{}); selected=null; await refresh(); showAudit(); toast('Demo reset to a fresh synthetic world.'); };
+}
+
+// ---------- trust tests
+async function showTrust(){
+  $('#content').innerHTML = `<section class="view"><h2>Can the AI break it?</h2><p class="muted">Two suites run live on the server. The first runs every scenario with the AI on, off and deliberately hostile. The verdict must not move. The second plants 10 attacks.</p><p class="muted">Running…</p></section>`;
+  const [h, a] = await Promise.all([api('/api/tests/harness'), api('/api/tests/attacks')]);
+  $('#content').innerHTML = `<section class="view"><h2>Can the AI break it?</h2>
+  <div class="verdict ${h.decisionsIdenticalAcrossSetups?'s-safe':'s-breach'}"><strong>${h.decisionsIdenticalAcrossSetups?`Same decision in all ${h.scenarios} scenarios × ${h.setups.length} setups`:`${h.mismatches.length} scenarios changed decision`}</strong>The AI can change the wording. It cannot change the verdict.</div>
+  <table><tr><th>Setup</th><th>Scenarios</th><th>Facts kept</th><th>Invented facts dropped</th><th>Unauthorised releases</th><th>Audit chain</th></tr>
+  ${h.stats.map(s=>`<tr><td>${esc(s.setup)}</td><td class="num">${s.cases}</td><td class="num">${s.factsKept}</td><td class="num">${s.hallucinatedFactsDropped}</td><td class="num">${s.unauthorisedToolSuccesses}</td><td>${s.auditChainOk?'intact':'broken'}</td></tr>`).join('')}</table>
+  <p class="small muted">Disposition mix: ${Object.entries(h.dispositionMix).map(([k,v])=>`${k} ${v}`).join(', ')}</p>
+  <h3>Planted attacks: ${a.passed} of ${a.total} blocked</h3>
+  <table><tr><th></th><th>Attack</th><th>What stopped it</th></tr>${a.results.map(r=>`<tr><td>${r.blocked?'<span class="ok">Blocked</span>':'<span class="fail">Got through</span>'}</td><td>${esc(r.attack)}</td><td class="small">${esc(r.evidence)}</td></tr>`).join('')}</table></section>`;
+}
+
+(async()=>{ META = await api('/api/meta'); await refresh(); render(); })();
+</script>
+</body>
+</html>
